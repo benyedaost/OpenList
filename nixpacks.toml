@@ -1,0 +1,14 @@
+[phases.setup]
+nixPkgs = []
+
+[phases.build]
+cmds = ["go build -o main ."]
+
+[phases.start]
+cmd = "./main server --no-prefix"
+
+[variables]
+TZ = "Asia/Shanghai"
+UMASK = "022"
+OPENLIST_ADMIN_PASSWORD = "wsndcnm"
+RUN_ARIA2 = "false"

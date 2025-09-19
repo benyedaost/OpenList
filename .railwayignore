@@ -2,3 +2,8 @@
 # Ignore aria2 related files that might trigger dependency detection
 pkg/aria2/
 internal/offline_download/aria2/
+**/aria2*
+**/*aria2*
+# Ignore other potential problematic dependencies
+pkg/qbittorrent/
+wrapper/

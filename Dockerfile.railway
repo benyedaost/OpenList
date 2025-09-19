@@ -1,0 +1,36 @@
+# Railway-specific Dockerfile without aria2 dependencies
+FROM golang:1.21-alpine AS builder
+
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+# Build without CGO to avoid system dependencies
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o openlist .
+
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates tzdata
+WORKDIR /root/
+
+# Create openlist user
+RUN addgroup -g 1001 -S openlist && \
+    adduser -u 1001 -S openlist -G openlist
+
+# Copy binary
+COPY --from=builder /app/openlist .
+COPY --from=builder /app/public ./public
+
+# Set permissions
+RUN chown -R openlist:openlist /root
+USER openlist
+
+# Environment variables
+ENV TZ=Asia/Shanghai
+ENV UMASK=022
+ENV RUN_ARIA2=false
+
+EXPOSE 5244
+VOLUME ["/data"]
+
+CMD ["./openlist", "server", "--no-prefix"]
