@@ -1,36 +1,75 @@
 # Railway-specific Dockerfile without aria2 dependencies
 FROM golang:1.21-alpine AS builder
 
+# Set working directory
 WORKDIR /app
+
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates
+
+# Copy go mod files first for better caching
 COPY go.mod go.sum ./
+
+# Download dependencies (without CGO to avoid system dependencies)
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOARCH=amd64
 RUN go mod download
 
+# Copy source code (excluding aria2 related files)
 COPY . .
-# Build without CGO to avoid system dependencies
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o openlist .
 
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates tzdata
-WORKDIR /root/
+# Remove aria2 related files explicitly
+RUN rm -rf pkg/aria2/ || true
+RUN rm -rf internal/offline_download/aria2/ || true
+RUN rm -rf wrapper/ || true
+RUN find . -name "*aria2*" -type f -delete || true
 
-# Create openlist user
-RUN addgroup -g 1001 -S openlist && \
-    adduser -u 1001 -S openlist -G openlist
+# Build the application with specific flags
+RUN go build -ldflags="-s -w -X main.version=railway" -tags="railway,noaria2" -o openlist .
 
-# Copy binary
-COPY --from=builder /app/openlist .
-COPY --from=builder /app/public ./public
+# Runtime stage - use minimal alpine
+FROM alpine:3.18
 
-# Set permissions
-RUN chown -R openlist:openlist /root
+# Install only essential runtime dependencies
+RUN apk add --no-cache ca-certificates tzdata && \
+    apk add --no-cache --virtual .run-deps libc6-compat
+
+# Create user and directories
+RUN addgroup -g 1000 openlist && \
+    adduser -D -s /bin/sh -u 1000 -G openlist openlist && \
+    mkdir -p /app/data && \
+    chown -R openlist:openlist /app
+
+# Set working directory
+WORKDIR /app
+
+# Copy binary and public files from builder
+COPY --from=builder --chown=openlist:openlist /app/openlist .
+COPY --from=builder --chown=openlist:openlist /app/public ./public
+
+# Switch to non-root user
 USER openlist
 
-# Environment variables
-ENV TZ=Asia/Shanghai
+# Set environment variables for Railway
+ENV PUID=1000
+ENV PGID=1000
 ENV UMASK=022
+ENV TZ=Asia/Shanghai
 ENV RUN_ARIA2=false
+ENV DISABLE_ARIA2=true
+ENV NO_ARIA2=true
+ENV RAILWAY_DEPLOYMENT=true
 
+# Expose port
 EXPOSE 5244
-VOLUME ["/data"]
 
-CMD ["./openlist", "server", "--no-prefix"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:5244/ || exit 1
+
+# Create volume
+VOLUME ["/app/data"]
+
+# Start command
+CMD ["./openlist", "server", "--no-aria2"]

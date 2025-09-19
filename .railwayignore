@@ -1,9 +1,42 @@
-# Railway ignore file
-# Ignore aria2 related files that might trigger dependency detection
+# Railway ignore file - Complete aria2 exclusion
+# Ignore all aria2 related files and directories
 pkg/aria2/
+pkg/aria2/*
 internal/offline_download/aria2/
+internal/offline_download/aria2/*
 **/aria2*
 **/*aria2*
+*aria2*
+aria2*
+
+# Ignore source files that might reference aria2
+**/*.go
+!main.go
+!cmd/*.go
+!server/*.go
+!internal/bootstrap/*.go
+!internal/conf/*.go
+!internal/db/*.go
+!internal/model/*.go
+!internal/setting/*.go
+!drivers/*/driver.go
+
 # Ignore other potential problematic dependencies
 pkg/qbittorrent/
+pkg/qbittorrent/*
 wrapper/
+wrapper/*
+
+# Ignore build artifacts that might contain aria2 references
+*.so
+*.dll
+*.dylib
+build/
+dist/
+tmp/
+
+# Ignore documentation that might mention aria2
+*.md
+!README.md
+docs/
+documentation/

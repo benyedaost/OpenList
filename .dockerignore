@@ -1,0 +1,39 @@
+# Docker ignore file - Exclude aria2 dependencies
+# Ignore all aria2 related files and directories
+pkg/aria2/
+pkg/aria2/*
+internal/offline_download/aria2/
+internal/offline_download/aria2/*
+**/aria2*
+**/*aria2*
+*aria2*
+aria2*
+
+# Ignore other potential problematic dependencies
+pkg/qbittorrent/
+pkg/qbittorrent/*
+wrapper/
+wrapper/*
+
+# Ignore build artifacts
+*.so
+*.dll
+*.dylib
+build/
+dist/
+tmp/
+
+# Ignore version control
+.git/
+.github/
+
+# Ignore documentation
+*.md
+!README.md
+docs/
+documentation/
+
+# Ignore development files
+.env
+.air.toml
+docker-compose.yml
