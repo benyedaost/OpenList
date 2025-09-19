@@ -1,0 +1,16 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+healthcheckPath = "/"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+
+[[services]]
+name = "openlist"
+
+[services.variables]
+TZ = "Asia/Shanghai"
+UMASK = "022"
+OPENLIST_ADMIN_PASSWORD = "wsndcnm"
+RUN_ARIA2 = "false"
